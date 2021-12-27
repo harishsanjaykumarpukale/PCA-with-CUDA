@@ -652,7 +652,7 @@ void SVD_and_PCA(int N,
         cudaMemcpy(A, device_A, double_PP, cudaMemcpyDeviceToHost);
         
         offset_ = compute_offset(A, P);
-        //printf("Sweep:%d, offset:%f\n", counter, offset_);
+        // printf("Sweep:%d, offset:%f\n", counter, offset_);
         counter++;
     }
     
@@ -742,9 +742,12 @@ void SVD_and_PCA(int N,
     
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_begin);
-    printf("TOTAL TIME:%f\n", time_span.count());
-    // print_matrix(D_HAT,N,K_,1);
+    printf("TOTAL TIME:%f\n", time_span.count());    
     // return;
+    // print_matrix(device_D_HAT,N,K_ - 1,1);
+
+
+    printf("\n Running sequential \n");
 
     /****************SERIAL JACOBI EIGENVALUE ALGORITHM (can be used for Speedup Computation):****************/
     t_begin = high_resolution_clock::now();
@@ -763,7 +766,7 @@ void SVD_and_PCA(int N,
     s_transpose(D, N, P, D_T);
     s_multiply(D_T, P, N, D, N, P, A_s);
 
-    printf("printing A_s:\n");
+    // printf("printing A_s:\n");
     //print_matrix(A_s, P, P, 1);
     for (int i = 0; i < P; i++)
     {
@@ -863,7 +866,7 @@ void SVD_and_PCA(int N,
         sum_eigenvalues_s+=e[i];
         //printf("%f,", (*SIGMA)[i]);
     }
-    // printf("sum evals_s:%f\n", sum_eigenvalues_s);
+    printf("sum evals_s:%f\n", sum_eigenvalues_s);
     printf("\n");
     //computing SIGMA_MATRIX:
     double *temp_sigma = (double *)calloc(P * N, sizeof(double));
@@ -904,11 +907,11 @@ void SVD_and_PCA(int N,
     s_compute_V(SIGMA, D_T, &u_s, &V_T_s, N, P);
    
     // printf("\nprinting V_T:\n");
-    // double sim1=s_matrix_similarity_fabs(*U, P, P, u_s);
+    double sim1=s_matrix_similarity_fabs(*U, P, P, u_s);
     // printf("L2-matrix fabs sim bw U's:%.10f\n", sim1);
-    // double sim2 = s_matrix_similarity_fabs(*V_T, N, N, V_T_s);
+    double sim2 = s_matrix_similarity_fabs(*V_T, N, N, V_T_s);
     // printf("L2-matrix fabs sim bw V_T's:%.10f\n", sim2);
-    // sim2 = s_matrix_similarity_fabs(*V_T, N, N, *V_T);
+    sim2 = s_matrix_similarity_fabs(*V_T, N, N, *V_T);
     // printf("L2-matrix fabs sim bw V_Tg's same:%.10f\n", sim2);
     // printf("prinitng V_t_s:\n");
     //print_matrix(V_T_s, N, N, 1);
@@ -938,12 +941,14 @@ void SVD_and_PCA(int N,
      //now, serially multiply D*W |=(NxP.PxK=NxK)
     s_multiply(D, N, P, W_s, P, K_s, D_HAT_s);
     sim2 = s_matrix_similarity_fabs(D_HAT_s, N, K_s, *D_HAT);
-    //printf("L2-matrix fabs sim bw PCAs:%.10f\n", sim2);
+    // printf("L2-matrix fabs sim bw PCAs:%.10f\n", sim2);
     sim2 = s_matrix_similarity_fabs(*D_HAT, N, K_s, *D_HAT);
-    // printf("L2-matrix fabs sim bw same G PCAs:%.10f\n", sim2);
+    printf("L2-matrix fabs sim bw same G PCAs:%.10f\n", sim2);
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_begin);
-    printf("SEQUENTIAL TOTAL TIME:%f\n print matrix", time_span.count());    
-    // print_matrix(D_HAT_s, N, K_s, 1);
+    printf("SEQUENTIAL TOTAL TIME:%f \n", time_span.count());    
+    print_matrix(D_HAT_s, N, K_s - 1, 1);
+    // print_matrix(D_T, P, N, 1);
     return;   
 }
+
