@@ -186,7 +186,7 @@ double l2_diff_norm(double *e_, double *e, int len)
 
 void print_matrix(double *A, int M, int N, bool console)
 {
-    return;
+    // return;
     for (int i = 0; i < M; i++)
     {
         for (int j = 0; j < N; j++)
@@ -652,7 +652,7 @@ void SVD_and_PCA(int N,
         cudaMemcpy(A, device_A, double_PP, cudaMemcpyDeviceToHost);
         
         offset_ = compute_offset(A, P);
-        printf("Sweep:%d, offset:%f\n", counter, offset_);
+        //printf("Sweep:%d, offset:%f\n", counter, offset_);
         counter++;
     }
     
@@ -742,104 +742,105 @@ void SVD_and_PCA(int N,
     
     t_end = high_resolution_clock::now();
     time_span = duration_cast<duration<double>>(t_end - t_begin);
-    printf("TOTAL TIME:%f\n", time_span.count());    
-    return;
+    printf("TOTAL TIME:%f\n", time_span.count());
+    // print_matrix(D_HAT,N,K_,1);
+    // return;
 
     /****************SERIAL JACOBI EIGENVALUE ALGORITHM (can be used for Speedup Computation):****************/
-    // t_begin = high_resolution_clock::now();
-    // //begin Jacobi eigenvalue algorithm:
-    // int state = P, num_iter = 0, m, k, l; //m: pivot row identifier
-    // double p, y, d, r, c, s, t;           //p: pivot element, c: cos, s: sin
-    // double *E = (double *)malloc(sizeof(double)*P*P);
-    // s_initialize_identity(E, P); //P*P
-    // double *E_ = (double *)malloc(sizeof(double) * P * P);
-    // double *e = (double *)malloc(sizeof(double) * P); //init eigen-values array
-    // double *e_ = (double *)malloc(sizeof(double) * P);
-    // int *ind = (int *)malloc(sizeof(int) * P);        //init maxindex array
-    // bool *changed = (bool *)malloc(sizeof(bool) * P); //change in eigen_value[k]
-    // double *A_s = (double *)calloc(P * P, sizeof(double));
-    // D_T = (double *)malloc(sizeof(double) * P * N);
-    // s_transpose(D, N, P, D_T);
-    // s_multiply(D_T, P, N, D, N, P, A_s);
+    t_begin = high_resolution_clock::now();
+    //begin Jacobi eigenvalue algorithm:
+    int state = P, num_iter = 0, m, k, l; //m: pivot row identifier
+    double p, y, d, r, c, s, t;           //p: pivot element, c: cos, s: sin
+    double *E = (double *)malloc(sizeof(double)*P*P);
+    s_initialize_identity(E, P); //P*P
+    double *E_ = (double *)malloc(sizeof(double) * P * P);
+    double *e = (double *)malloc(sizeof(double) * P); //init eigen-values array
+    double *e_ = (double *)malloc(sizeof(double) * P);
+    int *ind = (int *)malloc(sizeof(int) * P);        //init maxindex array
+    bool *changed = (bool *)malloc(sizeof(bool) * P); //change in eigen_value[k]
+    double *A_s = (double *)calloc(P * P, sizeof(double));
+    D_T = (double *)malloc(sizeof(double) * P * N);
+    s_transpose(D, N, P, D_T);
+    s_multiply(D_T, P, N, D, N, P, A_s);
 
-    // printf("printing A_s:\n");
-    // //print_matrix(A_s, P, P, 1);
-    // for (int i = 0; i < P; i++)
-    // {
-    //     ind[i] = s_maxind(A_s, P, i); //NOTE: undefined for last row
-    //     e[i] = A_s[i * P + i];
-    //     changed[i] = true;
-    //     //printf("%d, %d\n", i, ind[i]);
-    // }
-    // while (state && num_iter < MAX_ITER)
-    // {
-    //     memcpy(E_, E, sizeof(double) * P * P);
-    //     memcpy(e_, e, sizeof(double) * P);
-    //     //find index (k,l) of pivot p
-    //     m = 0;
-    //     for (int i = 1; i < P - 1; i++)
-    //     {
-    //         //printf("i:%d, %d, %f\n", i, ind[i], A[i*P+ind[i]]);
-    //         if (fabs(A_s[i * P + ind[i]]) > fabs(A_s[m * P + ind[m]]))
-    //         {
-    //             m = i;
-    //         }
-    //     }
-    //     k = m;
-    //     l = ind[k];
-    //     p = A_s[k * P + l];
-    //     y = 0.5 * (e[l] - e[k]);
-    //     d = fabs(y) + sqrt(p * p + y * y);
-    //     r = sqrt(p * p + d * d);
-    //     c = d / r;
-    //     s = p / r;
-    //     t = p * p / d;
-    //     if (y < 0)
-    //     {
-    //         s = -s;
-    //         t = -t;
-    //     }
-    //     A_s[k * P + l] = 0.0;
-    //     s_update(k, -t, e, changed, &state);
-    //     s_update(l, t, e, changed, &state);
+    printf("printing A_s:\n");
+    //print_matrix(A_s, P, P, 1);
+    for (int i = 0; i < P; i++)
+    {
+        ind[i] = s_maxind(A_s, P, i); //NOTE: undefined for last row
+        e[i] = A_s[i * P + i];
+        changed[i] = true;
+        //printf("%d, %d\n", i, ind[i]);
+    }
+    while (state && num_iter < MAX_ITER)
+    {
+        memcpy(E_, E, sizeof(double) * P * P);
+        memcpy(e_, e, sizeof(double) * P);
+        //find index (k,l) of pivot p
+        m = 0;
+        for (int i = 1; i < P - 1; i++)
+        {
+            //printf("i:%d, %d, %f\n", i, ind[i], A[i*P+ind[i]]);
+            if (fabs(A_s[i * P + ind[i]]) > fabs(A_s[m * P + ind[m]]))
+            {
+                m = i;
+            }
+        }
+        k = m;
+        l = ind[k];
+        p = A_s[k * P + l];
+        y = 0.5 * (e[l] - e[k]);
+        d = fabs(y) + sqrt(p * p + y * y);
+        r = sqrt(p * p + d * d);
+        c = d / r;
+        s = p / r;
+        t = p * p / d;
+        if (y < 0)
+        {
+            s = -s;
+            t = -t;
+        }
+        A_s[k * P + l] = 0.0;
+        s_update(k, -t, e, changed, &state);
+        s_update(l, t, e, changed, &state);
 
-    //     //rotate rows and cols k and l:
-    //     for (int i = 0; i < k; i++)
-    //     {
-    //         s_rotate(i, k, i, l, A_s, P, c, s);
-    //     }
-    //     for (int i = k + 1; i < l; i++)
-    //     {
-    //         s_rotate(k, i, i, l, A_s, P, c, s);
-    //     }
-    //     for (int i = l + 1; i < P; i++)
-    //     {
-    //         s_rotate(k, i, l, i, A_s, P, c, s);
-    //     }
-    //     //rotate eigenvectors:
-    //     for (int i = 0; i < P; i++)
-    //     {
-    //         double e_ik = c * E[i * P + k] - s * E[i * P + l];
-    //         double e_il = s * E[i * P + k] + c * E[i * P + l];
-    //         E[i * P + k] = e_ik;
-    //         E[i * P + l] = e_il;
-    //     }
-    //     ind[k] = s_maxind(A_s, P, k);
-    //     ind[l] = s_maxind(A_s, P, l);
-    //     double diff = l2_diff_norm(e_, e, P);
-    //     double diff_2 = l2_matrix_diff_norm(E_, E, P, P);
-    //     double upper_triangular_sum = s_upper_triangular_sum(A_s, P);
-    //     printf("\rITER:%d, state:%d, diff:%.10f up-sum:%f", num_iter, state, diff + diff_2, upper_triangular_sum);
-    //     fflush(stdout);
-    //     num_iter++;
-    // }
-    // //sort eigenvalues in desc:
-    // int *indices = (int *)malloc(sizeof(int) * P);
-    // for (int i = 0; i < P; i++)
-    // {
-    //     indices[i] = i;
-    // }
-    // s_mergesort(e, P, indices, 0, P - 1);
+        //rotate rows and cols k and l:
+        for (int i = 0; i < k; i++)
+        {
+            s_rotate(i, k, i, l, A_s, P, c, s);
+        }
+        for (int i = k + 1; i < l; i++)
+        {
+            s_rotate(k, i, i, l, A_s, P, c, s);
+        }
+        for (int i = l + 1; i < P; i++)
+        {
+            s_rotate(k, i, l, i, A_s, P, c, s);
+        }
+        //rotate eigenvectors:
+        for (int i = 0; i < P; i++)
+        {
+            double e_ik = c * E[i * P + k] - s * E[i * P + l];
+            double e_il = s * E[i * P + k] + c * E[i * P + l];
+            E[i * P + k] = e_ik;
+            E[i * P + l] = e_il;
+        }
+        ind[k] = s_maxind(A_s, P, k);
+        ind[l] = s_maxind(A_s, P, l);
+        double diff = l2_diff_norm(e_, e, P);
+        double diff_2 = l2_matrix_diff_norm(E_, E, P, P);
+        double upper_triangular_sum = s_upper_triangular_sum(A_s, P);
+        // printf("\rITER:%d, state:%d, diff:%.10f up-sum:%f", num_iter, state, diff + diff_2, upper_triangular_sum);
+        fflush(stdout);
+        num_iter++;
+    }
+    //sort eigenvalues in desc:
+    int *indices = (int *)malloc(sizeof(int) * P);
+    for (int i = 0; i < P; i++)
+    {
+        indices[i] = i;
+    }
+    s_mergesort(e, P, indices, 0, P - 1);
     // printf("Indices arr:\n");
     // for (int i = 0; i < P; i++)
     // {
@@ -853,54 +854,54 @@ void SVD_and_PCA(int N,
     // }
     // printf("\n");
 
-    // // //computing SIGMA:
-    // // printf("printing sigma:\n");
-    // double sum_eigenvalues_s=0.0;
-    // for (int i = 0; i < P; i++)
-    // {
-    //     (*SIGMA)[i] = sqrt(e[i]);
-    //     sum_eigenvalues_s+=e[i];
-    //     //printf("%f,", (*SIGMA)[i]);
-    // }
+    // //computing SIGMA:
+    // printf("printing sigma:\n");
+    double sum_eigenvalues_s=0.0;
+    for (int i = 0; i < P; i++)
+    {
+        (*SIGMA)[i] = sqrt(e[i]);
+        sum_eigenvalues_s+=e[i];
+        //printf("%f,", (*SIGMA)[i]);
+    }
     // printf("sum evals_s:%f\n", sum_eigenvalues_s);
-    // printf("\n");
-    // //computing SIGMA_MATRIX:
-    // double *temp_sigma = (double *)calloc(P * N, sizeof(double));
-    // for (int i = 0; i < P; i++)
-    // {
-    //     //assert(e[i]>=0);
-    //     temp_sigma[i * N + i] = sqrt(e[i]);
-    // }
+    printf("\n");
+    //computing SIGMA_MATRIX:
+    double *temp_sigma = (double *)calloc(P * N, sizeof(double));
+    for (int i = 0; i < P; i++)
+    {
+        //assert(e[i]>=0);
+        temp_sigma[i * N + i] = sqrt(e[i]);
+    }
 
-    // //eigenvectors matrix (U for D_T*D):
+    //eigenvectors matrix (U for D_T*D):
     // printf("printing E:\n");
 
-    // //L2
-    // double sum_temp=0.0;
-    // for (int x=0; x<P; x++)
-    // {
-    //     for (int y=0; y<P; y++)
-    //     {
-    //         sum_temp+=(fabs(E[x*P+indices[y]])-fabs(eigenvectors[x*P+e_indices[y]]))*(fabs(E[x*P+indices[y]])-fabs(eigenvectors[x*P+e_indices[y]]));
-    //     }
-    // }
+    //L2
+    double sum_temp=0.0;
+    for (int x=0; x<P; x++)
+    {
+        for (int y=0; y<P; y++)
+        {
+            sum_temp+=(fabs(E[x*P+indices[y]])-fabs(eigenvectors[x*P+e_indices[y]]))*(fabs(E[x*P+indices[y]])-fabs(eigenvectors[x*P+e_indices[y]]));
+        }
+    }
     // printf("L-2 fabs diff in E:%f\n", sqrt(sum_temp));
     
     // printf("printing U:\n");
-    // double *u_s = (double *) malloc(sizeof(double)*P*P);
-    // for (int row = 0; row < P; row++)
-    // {
-    //     for (int col = 0; col < P; col++)
-    //     {
-    //         // (*U)[row * P + col] = E[row * P + indices[col]];
-    //         u_s[row * P + col] = E[row * P + indices[col]];
-    //        // printf("%f,", (*U)[row*P+col]);
-    //     }
-    //     //printf("\n");
-    // }
-    // //compute V_T:
-    // double *V_T_s = (double *)calloc(N*N, sizeof(double));
-    // s_compute_V(SIGMA, D_T, &u_s, &V_T_s, N, P);
+    double *u_s = (double *) malloc(sizeof(double)*P*P);
+    for (int row = 0; row < P; row++)
+    {
+        for (int col = 0; col < P; col++)
+        {
+            // (*U)[row * P + col] = E[row * P + indices[col]];
+            u_s[row * P + col] = E[row * P + indices[col]];
+           // printf("%f,", (*U)[row*P+col]);
+        }
+        //printf("\n");
+    }
+    //compute V_T:
+    double *V_T_s = (double *)calloc(N*N, sizeof(double));
+    s_compute_V(SIGMA, D_T, &u_s, &V_T_s, N, P);
    
     // printf("\nprinting V_T:\n");
     // double sim1=s_matrix_similarity_fabs(*U, P, P, u_s);
@@ -910,39 +911,39 @@ void SVD_and_PCA(int N,
     // sim2 = s_matrix_similarity_fabs(*V_T, N, N, *V_T);
     // printf("L2-matrix fabs sim bw V_Tg's same:%.10f\n", sim2);
     // printf("prinitng V_t_s:\n");
-    // //print_matrix(V_T_s, N, N, 1);
+    //print_matrix(V_T_s, N, N, 1);
     
-    // //compute serial PCA:
-    //  int K_s=0;
-    //  double retention_s = 0.0;
-    //  int count_s = 0;
-    //  while((retention_s<retention) && (count_s < P))
-    //  {
-    //      retention_s+=((*SIGMA)[count_s]*(*SIGMA)[count_s]/sum_eigenvalues_s)*100;
-    //      K_s++;
-    //      count_s++;
-    //  }
-    //  printf("K_s CPU:%d, retention_S:%f\n", K_s, retention_s);
-    //  assert(*K==K_s);
-    //  double *W_s = (double *)malloc(sizeof(double)*P*K_s);
-    //  double *D_HAT_s = (double *)malloc(sizeof(double)*N*K_s);
-    //  for (int r=0; r<P; r++)
-    //  {
-    //      for (int c=0; c<K_s; c++)
-    //      {
-    //          W_s[r*K_s+c] = u_s[r*P+c];
-    //      }
-    //  }
+    //compute serial PCA:
+     int K_s=0;
+     double retention_s = 0.0;
+     int count_s = 0;
+     while((retention_s<retention) && (count_s < P))
+     {
+         retention_s+=((*SIGMA)[count_s]*(*SIGMA)[count_s]/sum_eigenvalues_s)*100;
+         K_s++;
+         count_s++;
+     }
+     printf("K_s CPU:%d, retention_S:%f\n", K_s, retention_s);
+     assert(*K==K_s);
+     double *W_s = (double *)malloc(sizeof(double)*P*K_s);
+     double *D_HAT_s = (double *)malloc(sizeof(double)*N*K_s);
+     for (int r=0; r<P; r++)
+     {
+         for (int c=0; c<K_s; c++)
+         {
+             W_s[r*K_s+c] = u_s[r*P+c];
+         }
+     }
  
-    //  //now, serially multiply D*W |=(NxP.PxK=NxK)
-    // s_multiply(D, N, P, W_s, P, K_s, D_HAT_s);
-    // sim2 = s_matrix_similarity_fabs(D_HAT_s, N, K_s, *D_HAT);
-    // printf("L2-matrix fabs sim bw PCAs:%.10f\n", sim2);
-    // sim2 = s_matrix_similarity_fabs(*D_HAT, N, K_s, *D_HAT);
+     //now, serially multiply D*W |=(NxP.PxK=NxK)
+    s_multiply(D, N, P, W_s, P, K_s, D_HAT_s);
+    sim2 = s_matrix_similarity_fabs(D_HAT_s, N, K_s, *D_HAT);
+    //printf("L2-matrix fabs sim bw PCAs:%.10f\n", sim2);
+    sim2 = s_matrix_similarity_fabs(*D_HAT, N, K_s, *D_HAT);
     // printf("L2-matrix fabs sim bw same G PCAs:%.10f\n", sim2);
-    // t_end = high_resolution_clock::now();
-    // time_span = duration_cast<duration<double>>(t_end - t_begin);
-    // printf("SEQUENTIAL TOTAL TIME:%f\n print matrix", time_span.count());    
-    // print_matrix(D_T, P, N, 1);
-    // return;   
+    t_end = high_resolution_clock::now();
+    time_span = duration_cast<duration<double>>(t_end - t_begin);
+    printf("SEQUENTIAL TOTAL TIME:%f\n print matrix", time_span.count());    
+    // print_matrix(D_HAT_s, N, K_s, 1);
+    return;   
 }
